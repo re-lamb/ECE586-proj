@@ -1,2 +1,4 @@
 # ECE586-proj
-winter '23 final project
+Winter '23 final project
+
+RISC-V simulator thing.
