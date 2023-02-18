@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     }
     
     mem = load(file);
-    close(file);
+    fclose(file);
 
     run(pc, sp, mem);
 }
