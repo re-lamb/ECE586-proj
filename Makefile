@@ -13,13 +13,14 @@ RVAS=$(RISCV)/bin/riscv64-unknown-linux-gnu-as
 # Sources for the simulator
 
 PROG=rvsim
-SOURCES=main
-INCLUDES=
+SOURCES=main.c sim.c
+INCLUDES=rvdefs.h
+OBJS=main.o sim.o
 
-# todo: copy rules to compile each .c to .o
+CC=gcc -Wall
 
-sim:
-	@echo "todo: produce the rvsim executable"
+sim: $(OBJS) $(INCLUDES)
+	$(CC) -o $(PROG) $(OBJS)
 
 test:
 	@echo "todo: run the test(s) through the simulator"
@@ -34,3 +35,7 @@ testgen:
 	$(RVAS) -ahld $(TESTPROG).s -o $(TESTPROG).o
 	$(RVOBJDUMP) -d $(TESTPROG).o | grep -o '^[[:blank:]]*[[:xdigit:]]*:[[:blank:]][[:xdigit:]]*' > $(TESTPROG).mem
 
+
+# Clean up
+clean:
+	@rm -f $(OBJS) $(PROG)
