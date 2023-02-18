@@ -13,9 +13,9 @@ RVAS=$(RISCV)/bin/riscv64-unknown-linux-gnu-as
 # Sources for the simulator
 
 PROG=rvsim
-SOURCES=main.c sim.c
+SOURCES=main.c sim.c mem.c
 INCLUDES=rvdefs.h
-OBJS=main.o sim.o
+OBJS=main.o sim.o mem.o
 
 CC=gcc -Wall
 

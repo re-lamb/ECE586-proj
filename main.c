@@ -8,7 +8,6 @@
 #include "rvdefs.h"
 #include <unistd.h>
 
-#define MEMSZ       0x10000
 #define MAXLINELEN  40
 
 uint pc = 0;
@@ -61,7 +60,8 @@ uint8_t *load(FILE *fp)
         }
 
         /* DO NOT STARE DIRECTLY AT THIS HACK */
-        *(uint*)&mem[addr] = value;
+        // *(uint*)&mem[addr] = value;
+        memstore(mem, addr, 4, value);
         printf("%5d: %08x = %08x\n", lc, addr, value);
     }
 

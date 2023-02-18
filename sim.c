@@ -14,18 +14,6 @@ char *regnames[] = {
     "t3", "t4", "t5", "t6"
 };
 
-
-uint loadword(uint8_t *mem, uint addr)
-{
-    uint*foo = (uint*)&mem[addr];
-    return *foo;
-}
-
-uint8_t loadbyte(uint8_t *mem, uint addr)
-{
-    return mem[addr];
-}
-
 void run(uint pc, uint sp, uint8_t *mem)
 {
     uint a;
@@ -35,8 +23,13 @@ void run(uint pc, uint sp, uint8_t *mem)
     printf("Memory dump:\n");
     for (a = 0; a < 0x10; a++)
     {
-        printf("byte mem[%08X] = %02X\n", a, (uint8_t)loadbyte(mem, a));
-
-        if (a % 4 == 0) printf("word mem[%08X] = %08X\n", a, loadword(mem, a));
+        printf("byte u[%08X] = %08X\n", a, memload(mem, a, 1, true));
+        printf("byte  [%08X] = %08X\n", a, memload(mem, a, 1, false));
+        printf("half u[%08X] = %08X\n", a, memload(mem, a, 2, true));
+        printf("half  [%08X] = %08X\n", a, memload(mem, a, 2, false));
+        printf("word  [%08X] = %08X\n", a, memload(mem, a, 4, true));
+        // /*if (a % 4 == 0) */ printf("word mem[%08X] = %08X\n", a, loadword(mem, a));
+        // /*if (a % 2 == 0) */ printf("half mem[%08X] = %04X\n", a, loadhalf(mem, a));
+        // printf("byte mem[%08X] = %02X\n", a, (uint8_t)loadbyte(mem, a));
     }
 }
