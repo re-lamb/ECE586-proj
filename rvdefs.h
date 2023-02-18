@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-void run(unsigned int pc, unsigned int sp, char *mem);
+
+void run(uint pc, uint sp, uint8_t *mem);
 
 #endif

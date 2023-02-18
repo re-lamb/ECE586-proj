@@ -2,18 +2,18 @@
  * ECE586 Winter 2023 Final Project
  * R.E. Lamb
  *
- * usage: rvsim [-d] [-v] [-pc=n] [-sp=n] [[-f] filename]
+ * usage: rvsim [-d] [-v] [-p pc] [-s stack] [[-f] filename]
  */
 
 #include "rvdefs.h"
 #include <unistd.h>
 
-#define MEMSZ 0x10000
+#define MEMSZ       0x10000
+#define MAXLINELEN  40
 
-
-unsigned int pc = 0;
-unsigned int sp = MEMSZ;
-char *mem;
+uint pc = 0;
+uint sp = MEMSZ;
+uint8_t *mem;
 
 /* args */
 int debug = 1;
@@ -23,13 +23,46 @@ char defmem[] = "program.mem";
 char *memfile = NULL;
 
 
-char *load(FILE *fp)
+/*
+ * Allocate memory to load the program memory input file,
+ * with byte swapping.  Bails if it can't.
+ */
+uint8_t *load(FILE *fp)
 {
+    char *line;
+    char buf[MAXLINELEN];
+
+    uint addr, value;
+    int lc = 0;
+
     /* Allocate the (currently) fixed memory block */
     if ((mem = malloc(MEMSZ)) == NULL)
     {
         fprintf(stderr, "could not allocate %d bytes\n", MEMSZ);
         exit(-1);
+    }
+
+    /* Read and parse one line at a time */
+    while ((line = fgets(buf, MAXLINELEN, fp)) != NULL)
+    {
+        lc++;
+
+        if (sscanf(line, " %x: %x", &addr, &value) != 2)
+        {
+            fprintf(stderr, "Bad input at line %d ignored: '%s'\n", lc, line);
+            continue;
+        }
+    
+        /* Make sure the address is in range */
+        if (addr >= MEMSZ-4)
+        {
+            fprintf(stderr, "Address 0x%X out of range at line %d\n", addr, lc);
+            continue;
+        }
+
+        /* DO NOT STARE DIRECTLY AT THIS HACK */
+        *(uint*)&mem[addr] = value;
+        printf("%5d: %08x = %08x\n", lc, addr, value);
     }
 
     return mem;
@@ -56,11 +89,11 @@ int main(int argc, char *argv[])
                 break;
 
             case 'p':
-                pc = (unsigned int)strtol(optarg, NULL, 0);   /* auto-detect radix */
+                pc = (uint)strtol(optarg, NULL, 0);   /* auto-detect radix */
                 break;
 
             case 's':
-                sp = (unsigned int)strtol(optarg, NULL, 0);   /* auto-detect radix */
+                sp = (uint)strtol(optarg, NULL, 0);   /* auto-detect radix */
                 break;
 
             case 'f':

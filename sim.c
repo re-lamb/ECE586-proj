@@ -15,7 +15,28 @@ char *regnames[] = {
 };
 
 
-void run(unsigned int pc, unsigned int sp, char *mem)
+uint loadword(uint8_t *mem, uint addr)
 {
+    uint*foo = (uint*)&mem[addr];
+    return *foo;
+}
+
+uint8_t loadbyte(uint8_t *mem, uint addr)
+{
+    return mem[addr];
+}
+
+void run(uint pc, uint sp, uint8_t *mem)
+{
+    uint a;
+
     printf("Starting simulation at pc=0x%X, sp=0x%X\n", pc, sp);
+
+    printf("Memory dump:\n");
+    for (a = 0; a < 0x10; a++)
+    {
+        printf("byte mem[%08X] = %02X\n", a, (uint8_t)loadbyte(mem, a));
+
+        if (a % 4 == 0) printf("word mem[%08X] = %08X\n", a, loadword(mem, a));
+    }
 }
