@@ -14,16 +14,6 @@ char *regnames[] = {
     "t3", "t4", "t5", "t6"
 };
 
-typedef enum instnum
-{
-    add,    sub,    xor,    or,     and,    sll,    srl,    sra,
-    slt,    sltu,   addi,   xori,   ori,    andi,   slli,   srli,
-    srai,   slti,   sltiu,  lb,     lh,     lw,     lbu,    lhu,
-    sb,     sh,     sw,     beq,    bne,    blt,    bge,    bltu,
-    bgeu,   jal,    jalr,   lui,    auipc,  ecall,  ebreak,
-    unknown
-} InstNum;
-
 char *instnames[] = {
     "add",  "sub",  "xor",  "or",   "and",  "sll",  "srl",  "sra",
     "slt",  "sltu", "addi", "xori", "ori",  "andi", "slli", "srli",
@@ -32,15 +22,6 @@ char *instnames[] = {
     "bgeu", "jal",  "jalr", "lui",  "auipc","ecall","ebreak",
     "unknown"
 };
-
-typedef struct decodedInst
-{
-    InstNum op;
-    int rd;
-    int rs1;
-    int rs2;
-    int imm;
-} Instruction;
 
 Instruction decode(uint value)
 {
@@ -103,14 +84,9 @@ Instruction decode(uint value)
 
         case 0x13:
             // I format (ALU ops)
-            printf("I format: value is %d : 0x%08X\n", value, value);
             this.imm = (value & 0xfff00000) >> 20;
-            if (value & 0x80000000)
-            {
-                this.imm |= 0xfffff000;
-            }
-            printf("I format: imm12 is %d : 0x%08X\n", this.imm, this.imm);
-
+            if (value & 0x80000000) this.imm |= 0xfffff000;
+            
             switch (funct3)
             {
                 case 0:
@@ -311,6 +287,16 @@ void run(uint pc, uint sp, uint8_t *mem)
         printf("    op: %d (%s)", inst.op, instnames[inst.op]);
         printf("    rd: %d  rs1: %d  rs2: %d\n", inst.rd, inst.rs1, inst.rs2);
         printf("   imm: %d (0x%08X)\n", inst.imm, inst.imm);
+
+        if (inst.op >= add && inst.op <= sltu)
+        {
+            // reg[inst.rd] = 
+            alu(inst.rs1, inst.rs2, inst.op);
+        }
+        else if (inst.op >= addi && inst.op <= sltiu)
+        {
+            alu(inst.rs1, inst.imm, inst.op);
+        }
     }
     /*
     inst = memload(mem, pc, 4, false);
