@@ -7,13 +7,13 @@
 
 #include "rvdefs.h"
 
-int alu(int a, int b, int op)
+int aluop(int a, int b, InstNum func)
 {
     int f;
     int mask = 0xffffffff;      /* all ones for sign ext */
     int shamt = (b & 0x1f);     /* shift amount */
 
-    switch (op)
+    switch (func)
     {
         case add:
         case addi:
@@ -70,9 +70,9 @@ int alu(int a, int b, int op)
             break;
 
         default:
-            fprintf(stderr, "Bad ALU op: %d\n", op);
+            fprintf(stderr, "Bad ALU function: %d\n", func);
     }
 
-    printf("ALU: %s %d, %d => %d\n", instnames[op], a, b, f);
+    printf("ALU: %s %d, %d => %d\n", instnames[func], a, b, f);
     return f;
 }

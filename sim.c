@@ -23,66 +23,69 @@ char *instnames[] = {
     "unknown"
 };
 
+
+int reg[32];
+
 Instruction decode(uint value)
 {
     Instruction this;
 
     int tmp;    /* for assembling the immediate field */
 
-    int format = value & 0x7f;
     int funct3 = (value >> 12) & 0x7;
     int funct7 = (value >> 25) & 0xfe;
 
-    this.op = unknown;
+    this.opcode = value & 0x7f;
+    this.func = unknown;
     this.rd =  (value & 0x0000f80) >> 7;
     this.rs1 = (value & 0x00f8000) >> 15;
     this.rs2 = (value & 0x1f00000) >> 20;
     this.imm = 0;
 
-    switch (format)
+    switch (this.opcode)
     {
-        case 0x33:
+        case aluRtype:
             // R format
             switch (funct3)
             {
                 case 0:
-                    this.op = (funct7 == 0x20) ? sub :
-                              (funct7 == 0x00) ? add : unknown;
+                    this.func = (funct7 == 0x20) ? sub :
+                                (funct7 == 0x00) ? add : unknown;
                     break;
 
                 case 1:
-                    this.op = sll;
+                    this.func = sll;
                     break;
 
                 case 2:
-                    this.op = slt;
+                    this.func = slt;
                     break;
 
                 case 3:
-                    this.op = sltu;
+                    this.func = sltu;
                     break;
 
                 case 4:
-                    this.op = xor;
+                    this.func = xor;
                     break;
 
                 case 5:
-                    this.op = (funct7 == 0x20) ? sra :
-                              (funct7 == 0x00) ? srl : unknown;
+                    this.func = (funct7 == 0x20) ? sra :
+                                (funct7 == 0x00) ? srl : unknown;
                     break;
 
                 case 6:
-                    this.op = or;
+                    this.func = or;
                     break;
 
                 case 7:
-                    this.op = and;
+                    this.func = and;
                     break;
             }
             break;
 
 
-        case 0x13:
+        case aluItype:
             // I format (ALU ops)
             this.imm = (value & 0xfff00000) >> 20;
             if (value & 0x80000000) this.imm |= 0xfffff000;
@@ -90,43 +93,43 @@ Instruction decode(uint value)
             switch (funct3)
             {
                 case 0:
-                    this.op = addi;
+                    this.func = addi;
                     break;
 
                 case 1:
-                    this.op = slli;
+                    this.func = slli;
                     break;
 
                 case 2:
-                    this.op = slti;
+                    this.func = slti;
                     // todo: bits 11:5 must be 0?
                     break;
 
                 case 3:
-                    this.op = sltiu;
+                    this.func = sltiu;
                     break;
 
                 case 4:
-                    this.op = xori;
+                    this.func = xori;
                     break;
 
                 case 5:
                     /* NB: imm[11:5] are same bits as funct7! */
-                    this.op = (funct7 == 0x20) ? srai :
-                              (funct7 == 0x00) ? srli : unknown;
+                    this.func = (funct7 == 0x20) ? srai :
+                                (funct7 == 0x00) ? srli : unknown;
                     break;
 
                 case 6:
-                    this.op = ori;
+                    this.func = ori;
                     break;
 
                 case 7:
-                    this.op = andi;
+                    this.func = andi;
                     break;
             }  
             break;
 
-        case 0x03:
+        case load:
             // I format (loads)
             this.imm = (value & 0xfff00000) >> 20;
             if (value & 0x80000000) this.imm |= 0xfffff000;  /* sign extended */
@@ -134,44 +137,44 @@ Instruction decode(uint value)
             switch (funct3)
             {
                 case 0:
-                    this.op = lb;
+                    this.func = lb;
                     break;
 
                 case 1:
-                    this.op = lh;
+                    this.func = lh;
                     break;
 
                 case 2:
-                    this.op = lw;
+                    this.func = lw;
                     break;
 
                 case 4:
-                    this.op = lbu;
+                    this.func = lbu;
                     break;
 
                 case 5:
-                    this.op = lhu;
+                    this.func = lhu;
                     break;
             }
             break;
 
-        case 0x67:
+        case jumpItype:
             // I format (jalr)
             if (funct3 == 0)
-                this.op = jalr;
+                this.func = jalr;
             break;
 
-        case 0x73:
+        case envcall:
             // I format (ecall/ebreak)
             this.imm = (value & 0xfff00000) >> 20;
             if (value & 0x80000000) this.imm |= 0xfffff000;  /* sign extended */
 
             if (funct3 == 0)
-                this.op = (this.imm == 1) ? ebreak :
-                          (this.imm == 0) ? ecall : unknown;
+                this.func = (this.imm == 1) ? ebreak :
+                            (this.imm == 0) ? ecall : unknown;
             break;
 
-        case 0x23:
+        case store:
             // S format (stores)
             tmp = (value & 0xfe000000) >> 20;   // bits 31:25
             if (value & 0x80000000) tmp |= 0xfffff000;
@@ -180,20 +183,20 @@ Instruction decode(uint value)
             switch (funct3)
             {
                 case 0:
-                    this.op = sb;
+                    this.func = sb;
                     break;
 
                 case 1:
-                    this.op = sh;
+                    this.func = sh;
                     break;
 
                 case 2:
-                    this.op = sw;
+                    this.func = sw;
                     break;
             }
             break;
 
-        case 0x63:
+        case branch:
             // B format (branches)
             tmp = (value & 0x80000000) ? 0xfffff000 : 0;
             this.imm = tmp | ((value & 0x80) << 4 |
@@ -203,32 +206,32 @@ Instruction decode(uint value)
             switch (funct3)
             {
                 case 0:
-                    this.op = beq;
+                    this.func = beq;
                     break;
 
                 case 1:
-                    this.op = bne;
+                    this.func = bne;
                     break;
 
                 case 4:
-                    this.op = blt;
+                    this.func = blt;
                     break;
 
                 case 5:
-                    this.op = bge;
+                    this.func = bge;
                     break;
 
                 case 6:
-                    this.op = bltu;
+                    this.func = bltu;
                     break;
 
                 case 7:
-                    this.op = bgeu;
+                    this.func = bgeu;
                     break;
             }
             break;
 
-        case 0x6f:
+        case jumpJtype:
             // J format (jump and link)
             tmp = (value & 0x80000000) ? 0xfff00000 : 0;
             this.imm = tmp | ((value & 0x7fe00000) >> 20 |
@@ -236,27 +239,53 @@ Instruction decode(uint value)
                               (value & 0x000ff000));
 
             if (funct3 == 0)
-                this.op = jal;    
+                this.func = jal;    
             break;
 
-        case 0x17:
-        case 0x37:
+        case loadUPC:
+        case loadUpper:
             // U format
             this.imm = (value & 0xfffff000);
-            this.op = (format == 0x37) ? lui : auipc;
+            this.func = (this.opcode == loadUpper) ? lui : auipc;
             break;
 
         default:
-            fprintf(stderr, "Unimplemented opcode 0x%02X\n", format);
+            fprintf(stderr, "Unimplemented opcode 0x%02X\n", this.opcode);
             exit(-1);
     }
 
-    if (this.op == unknown)
+    if (this.func == unknown)
     {
         fprintf(stderr, "Unknown instruction 0x%08X!\n", value);
         exit(-1);
     }
     return this;
+}
+
+void execute(Instruction inst)
+{
+    switch (inst.opcode)
+    {
+        case aluRtype: 
+            reg[inst.rd] = aluop(reg[inst.rs1], reg[inst.rs2], inst.func);
+            break;
+        
+        case aluItype: 
+            reg[inst.rd] = aluop(reg[inst.rs1], inst.imm, inst.func);
+            break;
+
+        case load:
+            reg[inst.rd] = loadop(reg[inst.rs1], inst.imm, inst.func);
+            break;
+
+        case store:
+            storeop(reg[inst.rs1], inst.imm, inst.func, reg[inst.rs2]);
+            break;
+
+        default:
+            printf("Unimplemented: %s op\n", instnames[inst.func]);
+            break;
+    }
 }
 
 /* Debugging */
@@ -267,36 +296,32 @@ void dumpmem(uint8_t *mem)
     printf("Memory dump:\n");
     for (a = 0; a < 0x10; a++)
     {
+    /*
         printf("byte u[%08X] = %08X\n", a, memload(mem, a, 1, true));
         printf("byte  [%08X] = %08X\n", a, memload(mem, a, 1, false));
         printf("half u[%08X] = %08X\n", a, memload(mem, a, 2, true));
         printf("half  [%08X] = %08X\n", a, memload(mem, a, 2, false));
         printf("word  [%08X] = %08X\n", a, memload(mem, a, 4, true));
+    */
     }  
 }
 
-void run(uint pc, uint sp, uint8_t *mem)
+void run(uint pc, uint sp /*, uint8_t *mem */)
 {
     printf("Starting simulation at pc=0x%X, sp=0x%X\n", pc, sp);
 
-    for (; pc < 0xf; pc += 4)
+    for (; pc < 0xff; pc += 4)
     {
-        Instruction inst = decode(memload(mem, pc, 4, false));
+        Instruction inst = decode(memload(/*mem, */ pc, 4, false));
 
-        printf("Instruction at 0x%08X: 0x%08X\n", pc, memload(mem, pc, 4, false));
-        printf("    op: %d (%s)", inst.op, instnames[inst.op]);
-        printf("    rd: %d  rs1: %d  rs2: %d\n", inst.rd, inst.rs1, inst.rs2);
+        printf("Instruction at 0x%08X: 0x%08X\n", pc, memload(/*mem, */ pc, 4, false));
+        printf("    op: 0x%2X  func: %d (%s)", inst.opcode, inst.func, instnames[inst.func]);
+        printf("    rd: %s=%d  rs1: %s=%d  rs2: %s=%d\n", regnames[inst.rd], reg[inst.rd],
+                                                          regnames[inst.rs1], reg[inst.rs1],
+                                                          regnames[inst.rs2], reg[inst.rs2]);
         printf("   imm: %d (0x%08X)\n", inst.imm, inst.imm);
 
-        if (inst.op >= add && inst.op <= sltu)
-        {
-            // reg[inst.rd] = 
-            alu(inst.rs1, inst.rs2, inst.op);
-        }
-        else if (inst.op >= addi && inst.op <= sltiu)
-        {
-            alu(inst.rs1, inst.imm, inst.op);
-        }
+        execute(inst);
     }
     /*
     inst = memload(mem, pc, 4, false);

@@ -7,7 +7,56 @@
 
 #include "rvdefs.h"
 
-int memload(uint8_t *mem, uint addr, uint8_t size, bool signxt)
+int loadop(int addr, int offset, InstNum func)
+{
+    switch (func)
+    {
+        case lb:
+            return memload(addr + offset, 1, true);
+
+        case lh:
+            return memload(addr + offset, 2, true);
+
+        case lw:
+            return memload(addr + offset, 4, false);
+
+        case lbu:
+            return memload(addr + offset, 1, false);
+
+        case lhu:
+            return memload(addr + offset, 2, false);
+
+        default:
+            fprintf(stderr, "Illegal load op: %d\n", func);
+            exit(-1);
+            break;
+    }
+}
+
+void storeop(int addr, int offset, InstNum func, int value)
+{
+    switch (func)
+    {
+        case sb:
+            memstore(addr + offset, 1, value);
+            break;
+
+        case sh:
+            memstore(addr + offset, 2, value);
+            break;
+
+        case sw:
+            memstore(addr + offset, 4, value);
+            break;
+    
+        default:
+            fprintf(stderr, "Illegal store op: %d\n", func);
+            exit(-1);
+            break;
+    }
+}
+
+int memload(uint addr, uint8_t size, bool signxt)
 {
     // TODO: Add stats and debug
     
@@ -23,7 +72,7 @@ int memload(uint8_t *mem, uint addr, uint8_t size, bool signxt)
     switch (size) 
     {
         case 1:
-            if (signxt) 
+            if (!signxt) 
             {
                 ret = (uint)mem[addr];
             }
@@ -34,7 +83,7 @@ int memload(uint8_t *mem, uint addr, uint8_t size, bool signxt)
             break;
 
         case 2:
-            if (signxt)
+            if (!signxt)
             {
                 ret = *(uint16_t*)&mem[addr];
             }
@@ -56,7 +105,7 @@ int memload(uint8_t *mem, uint addr, uint8_t size, bool signxt)
     return (int)ret;
 }
 
-void memstore(uint8_t *mem, uint addr, uint8_t size, int value)
+void memstore(uint addr, uint8_t size, int value)
 {
     // TODO: Add stats and debug
 

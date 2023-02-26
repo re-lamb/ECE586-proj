@@ -23,10 +23,9 @@ char *memfile = NULL;
 
 
 /*
- * Allocate memory to load the program memory input file,
- * with byte swapping.  Bails if it can't.
+ * Allocate memory to load the program memory input file, Bails if it can't.
  */
-uint8_t *load(FILE *fp)
+uint8_t *loadfile(FILE *fp)
 {
     char *line;
     char buf[MAXLINELEN];
@@ -59,9 +58,8 @@ uint8_t *load(FILE *fp)
             continue;
         }
 
-        /* DO NOT STARE DIRECTLY AT THIS HACK */
-        // *(uint*)&mem[addr] = value;
-        memstore(mem, addr, 4, value);
+        /* Use the store function to copy into main mem */
+        memstore(/*mem, */addr, 4, value);
         printf("%5d: %08x = %08x\n", lc, addr, value);
     }
 
@@ -130,8 +128,8 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    mem = load(file);
+    mem = loadfile(file);
     fclose(file);
 
-    run(pc, sp, mem);
+    run(pc, sp /*, mem */);
 }
