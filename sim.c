@@ -306,9 +306,7 @@ Instruction decode(uint value)
             this.imm = tmp | ((value & 0x7fe00000) >> 20 |
                               (value & 0x00100000) >> 9 |
                               (value & 0x000ff000));
-
-            if (funct3 == 0)
-                this.func = jal;    
+            this.func = jal;    
             break;
 
         case loadUPC:
