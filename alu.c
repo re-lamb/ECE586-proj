@@ -73,6 +73,6 @@ int aluop(int a, int b, InstNum func)
             fprintf(stderr, "Bad ALU function: %d\n", func);
     }
 
-    printf("ALU: %s %d, %d => %d\n", instnames[func], a, b, f);
+    if (debug) printf("ALU: %s %d, %d => %d\n", instnames[func], a, b, f);
     return f;
 }

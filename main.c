@@ -2,7 +2,7 @@
  * ECE586 Winter 2023 Final Project
  * R.E. Lamb
  *
- * usage: rvsim [-d] [-v] [-p pc] [-s stack] [[-f] filename]
+ * usage: rvsim [-h] [-d] [-v] [-p pc] [-s stack] [[-f] filename]
  */
 
 #include "rvdefs.h"
@@ -10,13 +10,11 @@
 
 #define MAXLINELEN  40
 
-uint pc = 0;
-uint sp = MEMSZ;
 uint8_t *mem;
 
 /* args */
 int debug = 1;
-int verbose = 1;
+int verbose = 0;
 
 char defmem[] = "program.mem";
 char *memfile = NULL;
@@ -70,11 +68,13 @@ uint8_t *loadfile(FILE *fp)
 int main(int argc, char *argv[])
 {   
     int opt;
+    uint pc = 0;
+    uint sp = MEMSZ;
 
     FILE *file;
     char *memfile = NULL;
 
-    while ((opt = getopt(argc, argv, "dvp:s:f:")) != -1)
+    while ((opt = getopt(argc, argv, "hdvp:s:f:")) != -1)
     {
         switch (opt)
         {
@@ -98,8 +98,9 @@ int main(int argc, char *argv[])
                 memfile = optarg;
                 break;
         
+            case 'h':
             default:
-                fprintf(stderr, "Usage: rvsim [-d] [-v] [-p pc] [-s stack] [[-f] filename]\n");
+                fprintf(stderr, "Usage: rvsim [-h] [-d] [-v] [-p pc] [-s stack] [[-f] filename]\n");
                 exit(1);
         }
     }

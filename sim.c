@@ -20,11 +20,72 @@ char *instnames[] = {
     "srai", "slti", "sltiu","lb",   "lh",   "lw",   "lbu",  "lhu",
     "sb",   "sh",   "sw",   "beq",  "bne",  "blt",  "bge",  "bltu",
     "bgeu", "jal",  "jalr", "lui",  "auipc","ecall","ebreak",
-    "unknown"
+    "exit", "unknown"
 };
 
 
 int reg[32];
+
+int regread(int r)
+{
+    if (r >= 0 && r <= 31)
+    {
+        if (debug && verbose) printf("Read  x%d (%s) = %d (0x%X)\n", r, regnames[r], reg[r], reg[r]);
+        return reg[r];
+    }
+    else
+    {
+        fprintf(stderr, "Register %d read out of range\n", r);
+        exit(-1);
+    }
+}
+
+void regwrite(int r, int val)
+{
+    if (r > 0 && r <= 31)
+    {
+        reg[r] = val;
+        if (debug) printf("Write x%d (%s) = %d (0x%X)\n", r, regnames[r], reg[r], reg[r]);
+    }
+    else if (r == 0)
+    {
+        if (debug) printf("Write x0 (zero) ignored\n");
+    }
+    else
+    {
+        fprintf(stderr, "Register %d write out of range\n", r);
+        exit(-1);
+    }
+}
+
+bool branchop(int rs1, int rs2, InstNum func)
+{
+    switch (func)
+    {
+        case beq:
+            return (rs1 == rs2);
+
+        case bne:
+            return (rs1 != rs2);
+
+        case blt:
+            return (rs1 < rs2);
+
+        case bge:
+            return (rs1 >= rs2);
+
+        case bltu:
+            return ((uint)rs1 < (uint)rs2);
+
+        case bgeu:
+            return ((uint)rs1 >= (uint)rs2);
+
+        default:
+            fprintf(stderr, "Illegal branch op %d\n", func);
+            exit(-1);
+            break;
+    }
+}
 
 Instruction decode(uint value)
 {
@@ -160,8 +221,16 @@ Instruction decode(uint value)
 
         case jumpItype:
             // I format (jalr)
+            this.imm = (value & 0xfff00000) >> 20;
+            if (value & 0x80000000) this.imm |= 0xfffff000;
+            
             if (funct3 == 0)
+            {
                 this.func = jalr;
+
+                if (this.rd == 0 && this.rs1 == 0 && this.imm == 0)
+                    this.func = exitprog;
+            }
             break;
 
         case envcall:
@@ -262,30 +331,59 @@ Instruction decode(uint value)
     return this;
 }
 
-void execute(Instruction inst)
+uint execute(uint pc, Instruction inst)
 {
+    int rs1 = regread(inst.rs1);
+    int rs2 = regread(inst.rs2);
+    int nextpc = pc + 4;
+
     switch (inst.opcode)
     {
         case aluRtype: 
-            reg[inst.rd] = aluop(reg[inst.rs1], reg[inst.rs2], inst.func);
+            regwrite(inst.rd, aluop(rs1, rs2, inst.func));
             break;
         
         case aluItype: 
-            reg[inst.rd] = aluop(reg[inst.rs1], inst.imm, inst.func);
+            regwrite(inst.rd, aluop(rs1, inst.imm, inst.func));
             break;
 
         case load:
-            reg[inst.rd] = loadop(reg[inst.rs1], inst.imm, inst.func);
+            regwrite(inst.rd, loadop(rs1, inst.imm, inst.func));
             break;
 
         case store:
-            storeop(reg[inst.rs1], inst.imm, inst.func, reg[inst.rs2]);
+            storeop(rs1, inst.imm, inst.func, rs2);
+            break;
+
+        case branch:
+            if (branchop(rs1, rs2, inst.func))
+                nextpc = (int)pc + inst.imm;
+            break;
+
+        case jumpJtype:
+            regwrite(inst.rd, nextpc);
+            nextpc = (int)pc + inst.imm;
+            break;
+
+        case jumpItype:
+            regwrite(inst.rd, nextpc);
+            nextpc = rs1 + inst.imm;
+            break;
+        
+        case loadUpper:
+            regwrite(inst.rd, inst.imm << 12);
+            break;
+
+        case loadUPC:
+            regwrite(inst.rd, (int)pc + (inst.imm << 12));
             break;
 
         default:
             printf("Unimplemented: %s op\n", instnames[inst.func]);
             break;
     }
+
+    return (uint)nextpc;
 }
 
 /* Debugging */
@@ -306,29 +404,32 @@ void dumpmem(uint8_t *mem)
     }  
 }
 
-void run(uint pc, uint sp /*, uint8_t *mem */)
+void run(uint startPC, uint initialSP /*, uint8_t *mem */)
 {
-    printf("Starting simulation at pc=0x%X, sp=0x%X\n", pc, sp);
+    /* Initialize the zero register explicitly */
+    reg[0] = 0;
+    reg[RA] = 0;
+    reg[SP] = initialSP;
 
-    for (; pc < 0xff; pc += 4)
+    uint pc = startPC;
+
+    printf("Starting simulation at pc=0x%X, sp=0x%X\n", pc, reg[SP]);
+
+    while (1)
     {
         Instruction inst = decode(memload(/*mem, */ pc, 4, false));
 
         printf("Instruction at 0x%08X: 0x%08X\n", pc, memload(/*mem, */ pc, 4, false));
         printf("    op: 0x%2X  func: %d (%s)", inst.opcode, inst.func, instnames[inst.func]);
-        printf("    rd: %s=%d  rs1: %s=%d  rs2: %s=%d\n", regnames[inst.rd], reg[inst.rd],
-                                                          regnames[inst.rs1], reg[inst.rs1],
-                                                          regnames[inst.rs2], reg[inst.rs2]);
+        printf("    rd: x%d  rs1: x%d  rs2: x%d\n", inst.rd, inst.rs1, inst.rs2);
         printf("   imm: %d (0x%08X)\n", inst.imm, inst.imm);
 
-        execute(inst);
+        if (inst.func == exitprog)
+        {
+            /* dump the stats */
+            exit(0);
+        }
+
+        pc = execute(pc, inst);
     }
-    /*
-    inst = memload(mem, pc, 4, false);
-
-    decode(inst);
-
-    sw
-
-    */
 }

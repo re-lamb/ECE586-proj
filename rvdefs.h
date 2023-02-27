@@ -16,6 +16,9 @@
 
 #define MEMSZ       0x10000
 
+#define RA  1
+#define SP  2
+
 typedef enum opnum
 {
     aluRtype = 0x33,
@@ -37,7 +40,7 @@ typedef enum instnum
     srai,   slti,   sltiu,  lb,     lh,     lw,     lbu,    lhu,
     sb,     sh,     sw,     beq,    bne,    blt,    bge,    bltu,
     bgeu,   jal,    jalr,   lui,    auipc,  ecall,  ebreak,
-    unknown
+    exitprog, unknown
 } InstNum;
 
 typedef struct decodedInst
@@ -50,13 +53,15 @@ typedef struct decodedInst
     int imm;
 } Instruction;
 
+extern int debug;
+extern int verbose;
 extern uint8_t *mem;
 extern char *instnames[];
 extern char *regnames[];
 
 int memload(uint addr, uint8_t size, bool signxt);
 void memstore(uint addr, uint8_t size, int value);
-void run(uint pc, uint sp /*, uint8_t *mem */);
+void run(uint startPC, uint initialSP /*, uint8_t *mem */);
 
 int aluop(int a, int b, InstNum func);
 int loadop(int addr, int offset, InstNum func);
