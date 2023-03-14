@@ -16,8 +16,11 @@
 
 #define MEMSZ       0x10000
 
-#define RA  1
-#define SP  2
+#define RA      1
+#define SP      2
+
+#define XLEN    32
+#define SIGNBIT (1 << (XLEN - 1))
 
 typedef enum opnum
 {

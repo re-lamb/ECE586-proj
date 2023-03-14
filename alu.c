@@ -10,8 +10,8 @@
 int aluop(int a, int b, InstNum func)
 {
     int f;
-    int mask = 0xffffffff;      /* all ones for sign ext */
-    int shamt = (b & 0x1f);     /* shift amount */
+    int mask = -1;              /* all ones for sign ext */
+    int shamt = (b & 0x1f);     /* shift amount (*/
 
     switch (func)
     {
@@ -53,9 +53,9 @@ int aluop(int a, int b, InstNum func)
         case sra:
         case srai:
             f = a >> shamt;
-            if (a & 0x80000000)
+            if (a & SIGNBIT)
             {
-                f |= mask << (32 - shamt);  /* add ext bits */
+                f |= mask << (XLEN - shamt);  /* add ext bits */
             }
             break;
 

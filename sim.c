@@ -149,7 +149,7 @@ Instruction decode(uint value)
         case aluItype:
             // I format (ALU ops)
             this.imm = (value & 0xfff00000) >> 20;
-            if (value & 0x80000000) this.imm |= 0xfffff000;
+            if (value & SIGNBIT) this.imm |= 0xfffff000;
             
             switch (funct3)
             {
@@ -193,7 +193,7 @@ Instruction decode(uint value)
         case load:
             // I format (loads)
             this.imm = (value & 0xfff00000) >> 20;
-            if (value & 0x80000000) this.imm |= 0xfffff000;  /* sign extended */
+            if (value & SIGNBIT) this.imm |= 0xfffff000;  /* sign extended */
 
             switch (funct3)
             {
@@ -222,7 +222,7 @@ Instruction decode(uint value)
         case jumpItype:
             // I format (jalr)
             this.imm = (value & 0xfff00000) >> 20;
-            if (value & 0x80000000) this.imm |= 0xfffff000;
+            if (value & SIGNBIT) this.imm |= 0xfffff000;
             
             if (funct3 == 0)
             {
@@ -236,7 +236,7 @@ Instruction decode(uint value)
         case envcall:
             // I format (ecall/ebreak)
             this.imm = (value & 0xfff00000) >> 20;
-            if (value & 0x80000000) this.imm |= 0xfffff000;  /* sign extended */
+            if (value & SIGNBIT) this.imm |= 0xfffff000;  /* sign extended */
 
             if (funct3 == 0)
                 this.func = (this.imm == 1) ? ebreak :
@@ -246,7 +246,7 @@ Instruction decode(uint value)
         case store:
             // S format (stores)
             tmp = (value & 0xfe000000) >> 20;   // bits 31:25
-            if (value & 0x80000000) tmp |= 0xfffff000;
+            if (value & SIGNBIT) tmp |= 0xfffff000;
             this.imm = tmp | this.rd;           // bits 11:7
 
             switch (funct3)
@@ -267,7 +267,7 @@ Instruction decode(uint value)
 
         case branch:
             // B format (branches)
-            tmp = (value & 0x80000000) ? 0xfffff000 : 0;
+            tmp = (value & SIGNBIT) ? 0xfffff000 : 0;
             this.imm = tmp | ((value & 0x80) << 4 |
                               (value & 0x7e000000) >> 20 |
                               (value & 0xf00) >> 7);
@@ -302,7 +302,7 @@ Instruction decode(uint value)
 
         case jumpJtype:
             // J format (jump and link)
-            tmp = (value & 0x80000000) ? 0xfff00000 : 0;
+            tmp = (value & SIGNBIT) ? 0xfff00000 : 0;
             this.imm = tmp | ((value & 0x7fe00000) >> 20 |
                               (value & 0x00100000) >> 9 |
                               (value & 0x000ff000));
@@ -372,11 +372,11 @@ uint execute(uint pc, Instruction inst)
             break;
         
         case loadUpper:
-            regwrite(inst.rd, inst.imm << 12);
+            regwrite(inst.rd, inst.imm);
             break;
 
         case loadUPC:
-            regwrite(inst.rd, (int)pc + (inst.imm << 12));
+            regwrite(inst.rd, (int)pc + inst.imm);
             break;
 
         default:
