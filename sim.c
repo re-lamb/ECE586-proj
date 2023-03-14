@@ -30,7 +30,7 @@ int regread(int r)
 {
     if (r >= 0 && r <= 31)
     {
-        if (debug && verbose) printf("Read  x%d (%s) = %d (0x%X)\n", r, regnames[r], reg[r], reg[r]);
+        if (debug) printf("Read  x%d (%s) = %d (0x%X)\n", r, regnames[r], reg[r], reg[r]);
         return reg[r];
     }
     else
@@ -355,7 +355,10 @@ uint execute(uint pc, Instruction inst)
 
         case branch:
             if (branchop(rs1, rs2, inst.func))
+            {
+                if (debug) printf("Branch taken\n");
                 nextpc = (int)pc + inst.imm;
+            }
             break;
 
         case jumpJtype:
@@ -382,6 +385,22 @@ uint execute(uint pc, Instruction inst)
     }
 
     return (uint)nextpc;
+}
+
+void dumpregs()
+{
+    printf("Registers:");
+
+    for (int i = 0; i < 32; i++)
+    {
+        if (i % 3 == 0)
+        {
+            printf("\n");
+        }
+        printf("x%02d (%5s) 0x%08X  ", i, regnames[i], reg[i]);
+    }
+
+    printf("\n");
 }
 
 /* Debugging */
@@ -411,23 +430,48 @@ void run(uint startPC, uint initialSP /*, uint8_t *mem */)
 
     uint pc = startPC;
 
-    printf("Starting simulation at pc=0x%X, sp=0x%X\n", pc, reg[SP]);
+    printf("Starting simulation @ PC=0x%X, SP=0x%X\n", pc, reg[SP]);
 
     while (1)
     {
+        /* Check for misaligned pc */
+        if ((pc & 0x3) != 0)
+        {
+            fprintf(stderr, "Misaligned access @ PC=0x%08X, aborting\n", pc);
+            exit(-1);
+        }
+
         Instruction inst = decode(memload(/*mem, */ pc, 4, false));
 
-        printf("Instruction at 0x%08X: 0x%08X\n", pc, memload(/*mem, */ pc, 4, false));
-        printf("    op: 0x%2X  func: %d (%s)", inst.opcode, inst.func, instnames[inst.func]);
-        printf("    rd: x%d  rs1: x%d  rs2: x%d\n", inst.rd, inst.rs1, inst.rs2);
-        printf("   imm: %d (0x%08X)\n", inst.imm, inst.imm);
+        if (verbose || debug)
+        {
+            printf("Instruction @ PC=0x%08X: 0x%08X\n", pc, memload(/*mem, */ pc, 4, false));
+
+            if (debug)
+            {
+                printf("    op: 0x%2X  func: %d (%s)", inst.opcode, inst.func, instnames[inst.func]);
+                printf("    rd: x%d  rs1: x%d  rs2: x%d\n", inst.rd, inst.rs1, inst.rs2);
+                printf("   imm: %d (0x%08X)\n", inst.imm, inst.imm);
+            }
+        }
 
         if (inst.func == exitprog)
         {
-            /* dump the stats */
+            /* Dump the stats */
+            printf("Execution stopped @ PC=0x%08X\n", pc);
+            dumpregs();
             exit(0);
         }
 
         pc = execute(pc, inst);
+
+        if (verbose && !debug) dumpregs();
+
+        if (interactive)
+        {
+            char c;
+            printf("\ncontinue: ");
+            while ((c = getchar()) != '\n') ;
+        }
     }
 }

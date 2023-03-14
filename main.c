@@ -2,7 +2,7 @@
  * ECE586 Winter 2023 Final Project
  * R.E. Lamb
  *
- * usage: rvsim [-h] [-d] [-v] [-p pc] [-s stack] [[-f] filename]
+ * usage: rvsim [-h] [-d] [-v] [-i] [-p pc] [-s stack] [[-f] filename]
  */
 
 #include "rvdefs.h"
@@ -13,8 +13,9 @@
 uint8_t *mem;
 
 /* args */
-int debug = 1;
+int debug = 0;
 int verbose = 0;
+int interactive = 0;
 
 char defmem[] = "program.mem";
 char *memfile = NULL;
@@ -58,7 +59,6 @@ uint8_t *loadfile(FILE *fp)
 
         /* Use the store function to copy into main mem */
         memstore(/*mem, */addr, 4, value);
-        printf("%5d: %08x = %08x\n", lc, addr, value);
     }
 
     return mem;
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     FILE *file;
     char *memfile = NULL;
 
-    while ((opt = getopt(argc, argv, "hdvp:s:f:")) != -1)
+    while ((opt = getopt(argc, argv, "hdvip:s:f:")) != -1)
     {
         switch (opt)
         {
@@ -84,6 +84,11 @@ int main(int argc, char *argv[])
 
             case 'd':
                 debug = 1;
+                break;
+
+            case 'i':
+                interactive = 1;
+                verbose = 1;
                 break;
 
             case 'p':
@@ -100,13 +105,16 @@ int main(int argc, char *argv[])
         
             case 'h':
             default:
-                fprintf(stderr, "Usage: rvsim [-h] [-d] [-v] [-p pc] [-s stack] [[-f] filename]\n");
+                fprintf(stderr, "Usage: rvsim [-h] [-d] [-v] [-i] [-p pc] [-s stack] [[-f] filename]\n");
                 exit(1);
         }
     }
 
-    printf("argc=%d, optind=%d, memfile=%s\n", argc, optind, memfile);
-    printf("debug=%d, verbose=%d, pc=0x%X, sp=0x%X\n", debug, verbose, pc, sp);
+    if (debug)
+    {
+        printf("argc=%d, optind=%d, memfile=%s\n", argc, optind, memfile);
+        printf("debug=%d, verbose=%d, interactive=%d, pc=0x%X, sp=0x%X\n", debug, verbose, interactive, pc, sp);
+    }
 
     /* Any unparsed options? Assume it's a filename... */
     if (optind < argc)
