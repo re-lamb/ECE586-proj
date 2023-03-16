@@ -2,7 +2,17 @@
  * ECE586 Winter 2023 Final Project
  * R.E. Lamb
  *
- * usage: rvsim [-h] [-d] [-v] [-i] [-p pc] [-s stack] [[-f] filename]
+ * usage: rvsim [-h] [-dvi] [-b bkpt] [-p pc] [-s stack] [[-f] filename]
+ *
+ * args:
+ *      -h      print usage message
+ *      -d      enable debug output
+ *      -v      enable verbose output
+ *      -i      interactive (single step)
+ *      -b bkpt set a breakpoint
+ *      -p pc   set the initial program counter
+ *      -s sp   set the stack pointer
+ *      -f file read from 'file'
  */
 
 #include "rvdefs.h"
@@ -16,6 +26,9 @@ uint8_t *mem;
 int debug = 0;
 int verbose = 0;
 int interactive = 0;
+int breakpoint = 0;
+
+uint breakAddr = 0;
 
 char defmem[] = "program.mem";
 char *memfile = NULL;
@@ -74,7 +87,7 @@ int main(int argc, char *argv[])
     FILE *file;
     char *memfile = NULL;
 
-    while ((opt = getopt(argc, argv, "hdvip:s:f:")) != -1)
+    while ((opt = getopt(argc, argv, "hdvib:p:s:f:")) != -1)
     {
         switch (opt)
         {
@@ -91,6 +104,11 @@ int main(int argc, char *argv[])
                 verbose = 1;
                 break;
 
+            case 'b':
+                breakpoint = 1;
+                breakAddr = (uint)strtol(optarg, NULL, 0);   /* auto-detect radix */
+                break;
+
             case 'p':
                 pc = (uint)strtol(optarg, NULL, 0);   /* auto-detect radix */
                 break;
@@ -105,15 +123,9 @@ int main(int argc, char *argv[])
         
             case 'h':
             default:
-                fprintf(stderr, "Usage: rvsim [-h] [-d] [-v] [-i] [-p pc] [-s stack] [[-f] filename]\n");
+                fprintf(stderr, "Usage: rvsim [-h] [-idv] [-b bkpt] [-p pc] [-s stack] [[-f] filename]\n");
                 exit(1);
         }
-    }
-
-    if (debug)
-    {
-        printf("argc=%d, optind=%d, memfile=%s\n", argc, optind, memfile);
-        printf("debug=%d, verbose=%d, interactive=%d, pc=0x%X, sp=0x%X\n", debug, verbose, interactive, pc, sp);
     }
 
     /* Any unparsed options? Assume it's a filename... */
@@ -127,7 +139,15 @@ int main(int argc, char *argv[])
     {
         memfile = defmem;
     }
-    
+ 
+    if (debug)
+    {
+        printf("argc=%d, optind=%d, memfile=%s\n", argc, optind, memfile);
+        printf("debug=%d, verbose=%d, interactive=%d, breakpoint=%d (%x)\n",
+                debug, verbose, interactive, breakpoint, breakAddr);
+        printf("pc=0x%X, sp=0x%X\n", pc, sp);
+    }
+
     /* Verify input is readable */
     file = fopen(memfile, "r");
     

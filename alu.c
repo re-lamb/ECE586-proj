@@ -10,9 +10,10 @@
 int aluop(int a, int b, InstNum func)
 {
     int f;
-    int mask = -1;              /* all ones for sign ext */
-    int shamt = (b & 0x1f);     /* shift amount (*/
+    int shamt = (b & 0x1f);     /* shift amount */
 
+    if (debug) printf("Shift amt: %d\n", shamt);
+    
     switch (func)
     {
         case add:
@@ -47,16 +48,14 @@ int aluop(int a, int b, InstNum func)
 
         case srl:
         case srli:
-            f = a >> shamt;
+            /* coerce to uint, gcc won't sign extend */
+            f = (uint)a >> shamt;
             break;
 
         case sra:
         case srai:
+            /* gcc sign extends here! (int)a */
             f = a >> shamt;
-            if (a & SIGNBIT)
-            {
-                f |= mask << (XLEN - shamt);  /* add ext bits */
-            }
             break;
 
         case slt:

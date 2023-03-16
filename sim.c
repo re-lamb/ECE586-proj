@@ -8,8 +8,8 @@
 #include "rvdefs.h"
 
 char *regnames[] = {
-    "zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
-    "s0/fp", "s1", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
+    "zer", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
+    "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
     "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
     "t3", "t4", "t5", "t6"
 };
@@ -397,7 +397,7 @@ void dumpregs()
         {
             printf("\n");
         }
-        printf("x%02d (%5s) 0x%08X  ", i, regnames[i], reg[i]);
+        printf("x%02d (%3s) 0x%08X  ", i, regnames[i], reg[i]);
     }
 
     printf("\n");
@@ -440,7 +440,7 @@ void run(uint startPC, uint initialSP /*, uint8_t *mem */)
             fprintf(stderr, "Misaligned access @ PC=0x%08X, aborting\n", pc);
             exit(-1);
         }
-
+        
         Instruction inst = decode(memload(/*mem, */ pc, 4, false));
 
         if (verbose || debug)
@@ -455,6 +455,19 @@ void run(uint startPC, uint initialSP /*, uint8_t *mem */)
             }
         }
 
+        if (breakpoint && (breakAddr == pc))
+        {
+            interactive = 1;
+            printf("Breakpoint at 0x%08X\n", pc);
+        }
+
+        if (interactive)
+        {
+            char c;
+            printf("\ncontinue: ");
+            while ((c = getchar()) != '\n') ;
+        }
+
         if (inst.func == exitprog)
         {
             /* Dump the stats */
@@ -467,11 +480,5 @@ void run(uint startPC, uint initialSP /*, uint8_t *mem */)
 
         if (verbose && !debug) dumpregs();
 
-        if (interactive)
-        {
-            char c;
-            printf("\ncontinue: ");
-            while ((c = getchar()) != '\n') ;
-        }
     }
 }

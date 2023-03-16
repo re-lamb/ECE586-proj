@@ -58,7 +58,9 @@ typedef struct decodedInst
 
 extern int debug;
 extern int verbose;
+extern int breakpoint;
 extern int interactive;
+extern uint breakAddr;
 extern uint8_t *mem;
 extern char *instnames[];
 extern char *regnames[];
