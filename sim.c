@@ -379,6 +379,10 @@ uint execute(uint pc, Instruction inst)
             regwrite(inst.rd, (int)pc + inst.imm);
             break;
 
+        case envcall:
+            regwrite(10, envop(inst)); /* result left in a0 */
+            break;
+
         default:
             printf("Unimplemented: %s op\n", instnames[inst.func]);
             break;
@@ -423,6 +427,9 @@ void dumpmem(uint8_t *mem)
 
 void run(uint startPC, uint initialSP /*, uint8_t *mem */)
 {
+    char c;
+    int done;
+
     /* Initialize the zero register explicitly */
     reg[0] = 0;
     reg[RA] = 0;
@@ -440,7 +447,7 @@ void run(uint startPC, uint initialSP /*, uint8_t *mem */)
             fprintf(stderr, "Misaligned access @ PC=0x%08X, aborting\n", pc);
             exit(-1);
         }
-        
+
         Instruction inst = decode(memload(/*mem, */ pc, 4, false));
 
         if (verbose || debug)
@@ -458,14 +465,65 @@ void run(uint startPC, uint initialSP /*, uint8_t *mem */)
         if (breakpoint && (breakAddr == pc))
         {
             interactive = 1;
+            debug = 1;
             printf("Breakpoint at 0x%08X\n", pc);
         }
 
         if (interactive)
         {
-            char c;
-            printf("\ncontinue: ");
-            while ((c = getchar()) != '\n') ;
+            done = 0;
+
+            while (!done)
+            {
+                printf("\n-- More? c)ontinue, d)isable bkpt, r)egs, q)uit: ");
+                fflush(stdout);
+                
+                read(STDIN_FILENO, &c, 1);
+
+                switch (c)
+                {
+                    case '?':
+                    case 'h':
+                        printf("Help\n");
+                        printf("c - continue execution (no stepping)\n");
+                        printf("d - disable the breakpoint if set\n");
+                        printf("r - dump the current registers\n");
+                        printf("q - quit the program immediately\n");
+                        printf("\nPress space or enter to step.\n");
+                        break;
+
+                    case 'q':
+                        printf("Quit\n");
+                        inst.func = exitprog;
+                        done = 1;
+                        break;
+
+                    case ' ':
+                    case '\n':
+                        printf("\n");
+                        done = 1;
+                        break;
+
+                    case 'd':
+                        breakpoint = 0;
+                        printf("\nBreakpoint disabled.\n");
+                        break;
+
+                    case 'r':
+                        dumpregs();
+                        break;
+
+                    case 'c':
+                        interactive = 0;
+                        printf("\nContinuing...\n");
+                        done = 1;
+                        break;
+
+                    default:
+                        printf("???\n");
+                        break;
+                }
+            }
         }
 
         if (inst.func == exitprog)
@@ -473,7 +531,7 @@ void run(uint startPC, uint initialSP /*, uint8_t *mem */)
             /* Dump the stats */
             printf("Execution stopped @ PC=0x%08X\n", pc);
             dumpregs();
-            exit(0);
+            return;
         }
 
         pc = execute(pc, inst);

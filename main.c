@@ -16,7 +16,7 @@
  */
 
 #include "rvdefs.h"
-#include <unistd.h>
+#include <termios.h>
 
 #define MAXLINELEN  40
 
@@ -33,6 +33,8 @@ uint breakAddr = 0;
 char defmem[] = "program.mem";
 char *memfile = NULL;
 
+/* for interactive mode */
+struct termios orig_termios;
 
 /*
  * Allocate memory to load the program memory input file, Bails if it can't.
@@ -75,6 +77,23 @@ uint8_t *loadfile(FILE *fp)
     }
 
     return mem;
+}
+
+/* restore the original term settings */
+void setcooked() 
+{
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+}
+
+/* interactive sets raw mode without echo */
+void setraw()
+{
+    tcgetattr(STDIN_FILENO, &orig_termios);
+    atexit(setcooked);
+
+    struct termios raw = orig_termios;
+    raw.c_lflag &= ~(ECHO | ICANON);
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
 
@@ -160,5 +179,7 @@ int main(int argc, char *argv[])
     mem = loadfile(file);
     fclose(file);
 
+    setraw();
     run(pc, sp /*, mem */);
+    setcooked();
 }

@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #define MEMSZ       0x10000
 
@@ -69,8 +70,13 @@ int memload(uint addr, uint8_t size, bool signxt);
 void memstore(uint addr, uint8_t size, int value);
 void run(uint startPC, uint initialSP /*, uint8_t *mem */);
 
+int regread(int r);
+void regwrite(int r, int val);
+void dumpregs();
+
 int aluop(int a, int b, InstNum func);
 int loadop(int addr, int offset, InstNum func);
 void storeop(int addr, int offset, InstNum func, int value);
+int envop(Instruction inst);
 
 #endif
