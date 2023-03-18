@@ -43,6 +43,6 @@ L9:
     bgeu a2, a0, pass	# a > b, true
     j fail
 pass:
-    li t0, 0
+    li t0, 0xcafebabe
 fail:
     jr zero

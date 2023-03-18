@@ -22,24 +22,43 @@ CC=gcc -Wall
 sim: $(OBJS) $(INCLUDES)
 	$(CC) -o $(PROG) $(OBJS)
 
-test:
-	@echo "todo: run the test(s) through the simulator"
-
-#
-# Generate .mem files from the various test programs
-#
+# Generate .mem files from a C function
 TESTPROG=prog
-TESTASM=ecall
+
+# Generate .mem file from an assembler .s file
+TESTDIR=tests
+TESTS=addsub beq bge blt logical shift slt
+TESTSRC=addsub.s beq.s bge.s blt.s ecall.s logical.s shift.s slt.s
+TESTASM=addsub.mem beq.mem bge.mem blt.mem ecall.mem logical.mem shift.mem slt.mem
+
+ASFLAGS=-ahld -fpic -march=rv32i -mabi=ilp32
 
 testgen: $(TESTPROG).c
 	$(RVGCC) -fpic -march=rv32i -mabi=ilp32 -S $(TESTPROG).c
 	$(RVAS) -ahld $(TESTPROG).s -o $(TESTPROG).o
 	$(RVOBJDUMP) -d $(TESTPROG).o | grep -o '^[[:blank:]]*[[:xdigit:]]*:[[:blank:]][[:xdigit:]]*' > $(TESTPROG).mem
 
-testasm: $(TESTASM).s
-	$(RVAS) -ahld $(TESTASM).s -o $(TESTASM).o
-	$(RVOBJDUMP) -d $(TESTASM).o | grep -o '^[[:blank:]]*[[:xdigit:]]*:[[:blank:]][[:xdigit:]]*' > $(TESTASM).mem
+ecall:
+	$(RVGCC) -fpic -march=rv32i -mabi=ilp32 -S $(TESTDIR)/$(@F).s
+	$(RVAS) $(ASFLAGS) $(TESTDIR)/$(@F).s -o $(TESTDIR)/$(@F).o
+	$(RVOBJDUMP) -d $(TESTDIR)/$(@F).o | grep -o '^[[:blank:]]*[[:xdigit:]]*:[[:blank:]][[:xdigit:]]*' > $(TESTDIR)/$(@F).mem
+
+$(TESTS):
+	$(RVAS) $(ASFLAGS) $(TESTDIR)/$(@F).s -o $(TESTDIR)/$(@F).o
+	$(RVOBJDUMP) -d $(TESTDIR)/$(@F).o | grep -o '^[[:blank:]]*[[:xdigit:]]*:[[:blank:]][[:xdigit:]]*' > $(TESTDIR)/$(@F).mem
+
+check:
+	@./$(PROG) tests/addsub.mem
+	@./$(PROG) tests/beq.mem
+	@./$(PROG) tests/bge.mem
+	@./$(PROG) tests/blt.mem
+	@./$(PROG) tests/logical.mem
+	@./$(PROG) tests/shift.mem
+	@./$(PROG) tests/slt.mem
+
+all: sim $(TESTS)
 
 # Clean up
 clean:
 	@rm -f $(OBJS) $(PROG)
+

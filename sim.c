@@ -425,7 +425,7 @@ void dumpmem(uint8_t *mem)
     }  
 }
 
-void run(uint startPC, uint initialSP /*, uint8_t *mem */)
+void run(uint startPC, uint initialSP)
 {
     char c;
     int done;
@@ -448,11 +448,11 @@ void run(uint startPC, uint initialSP /*, uint8_t *mem */)
             exit(-1);
         }
 
-        Instruction inst = decode(memload(/*mem, */ pc, 4, false));
+        Instruction inst = decode(memload(pc, 4, false));
 
         if (verbose || debug)
         {
-            printf("Instruction @ PC=0x%08X: 0x%08X\n", pc, memload(/*mem, */ pc, 4, false));
+            printf("\nInstruction @ PC=0x%08X: 0x%08X\n", pc, memload(pc, 4, false));
 
             if (debug)
             {

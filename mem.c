@@ -9,28 +9,37 @@
 
 int loadop(int addr, int offset, InstNum func)
 {
+    int ret;
+
     switch (func)
     {
         case lb:
-            return memload(addr + offset, 1, true);
+            ret = memload(addr + offset, 1, true);
+	    break;
 
         case lh:
-            return memload(addr + offset, 2, true);
+            ret = memload(addr + offset, 2, true);
+	    break;
 
         case lw:
-            return memload(addr + offset, 4, false);
+            ret = memload(addr + offset, 4, false);
+	    break;
 
         case lbu:
-            return memload(addr + offset, 1, false);
+            ret = memload(addr + offset, 1, false);
+	    break;
 
         case lhu:
-            return memload(addr + offset, 2, false);
+            ret = memload(addr + offset, 2, false);
+	    break;
 
         default:
             fprintf(stderr, "Illegal load op: %d\n", func);
             exit(-1);
             break;
     }
+
+    if (debug) printf("Load: 0x%08X => 0x%08X\n", addr + offset, ret);
 }
 
 void storeop(int addr, int offset, InstNum func, int value)
@@ -54,12 +63,12 @@ void storeop(int addr, int offset, InstNum func, int value)
             exit(-1);
             break;
     }
+
+    if (debug) printf("Store: 0x%08X => @ 0x%08X\n", value, addr + offset);
 }
 
 int memload(uint addr, uint8_t size, bool signxt)
 {
-    // TODO: Add stats and debug
-    
     int ret;
 
     if ((addr + size-1) >= MEMSZ)
@@ -67,7 +76,7 @@ int memload(uint addr, uint8_t size, bool signxt)
         fprintf(stderr, "Load from 0x%08X out of range\n", addr);
         exit(-1);
     }
-
+    
     /* Abuse the compiler instead of shifting and masking */
     switch (size) 
     {
@@ -107,8 +116,6 @@ int memload(uint addr, uint8_t size, bool signxt)
 
 void memstore(uint addr, uint8_t size, int value)
 {
-    // TODO: Add stats and debug
-
     if ((addr + size-1) >= MEMSZ)
     {
         fprintf(stderr, "Store to 0x%08X out of range\n", addr);

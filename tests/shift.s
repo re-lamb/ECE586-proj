@@ -1,10 +1,12 @@
+.local L3
+
 # test sll/i
     li t0, -1           # init pass/fail result
     li a1, 0x00000001   # test vector
     li a2, 0x00000001   
     li a3, 0x00100000   # immediate increment
     li a4, 0x00061513   # slli a0, a2, 0 instruction
-    la a5, L3
+    li a5, 0x94		# set address of the instruction (L3)
 
 # shift left
     li t1, 32           # test shift amount mask 32 -> 0 
@@ -78,7 +80,7 @@ L4:
   
 # test srai    
     li a4, 0x40065813   # srai a6, a2, 0 instruction
-    la t4, L5           # instruction to modify
+    li t4, 0x140        # instruction to modify (L5)
     li t1, 31           # 
     li t2, 0
     li a1, 1

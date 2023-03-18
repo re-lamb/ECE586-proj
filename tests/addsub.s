@@ -43,10 +43,10 @@
     bne a0, a2, fail
     addi a0, a2, -1        # -1 + -1 = -2
     bne a0, a7, fail
-    li a7 0x00000800
+    li a7, 0x00000800
     addi a0, a1, 0x7ff    # 1 + largest +imm = 0x800
     bne a0, a7, fail
-    addi a0, a0, 0xfffff800    # 0x800 + largest -imm = 0
+    addi a0, a0, -2048    # 0x800 + largest -imm = 0
     bne a0, zero, fail
     
 # sub
