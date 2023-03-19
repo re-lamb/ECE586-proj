@@ -380,7 +380,15 @@ uint execute(uint pc, Instruction inst)
             break;
 
         case envcall:
-            regwrite(10, envop(inst)); /* result left in a0 */
+		if (inst.func == ebreak)
+		{
+			interactive = 1;
+			printf("EBREAK @ 0x%08X\n", pc);
+		}
+		else
+		{
+			regwrite(10, envop(inst)); /* result left in a0 */
+		}
             break;
 
         default:
