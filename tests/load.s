@@ -50,14 +50,14 @@
     lw a1, 3(s0)
     bne a1, a2, fail
     
-    addi s1, s0, -2048    # test largest negative offset
-    sw a0, -2048(s0)
-    lw a1, 0(s1)
+    addi s1, s0, -2048    # test largest negative load offset
+    sw a0, 0(s1)
+    lw a1, -2048(s0)
     bne a0, a1, fail
     
-    addi s1, s0, 2047     # test largest positive offset
-    sw a0, 2047(s0)
-    lw a1, 0(s1)
+    addi s1, s0, 2047     # test largest positive load offset
+    sw a0, 0(s1)
+    lw a1, 2047(s0)
     bne a0, a1, fail
     
 # lh

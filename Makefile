@@ -27,9 +27,7 @@ TESTPROG=prog
 
 # Generate .mem file from an assembler .s file
 TESTDIR=tests
-TESTS=addsub beq bge blt logical shift slt upper
-TESTSRC=addsub.s beq.s bge.s blt.s ecall.s logical.s shift.s slt.s
-TESTASM=addsub.mem beq.mem bge.mem blt.mem ecall.mem logical.mem shift.mem slt.mem
+TESTS=addsub beq bge blt logical shift slt upper load store
 
 ASFLAGS=-ahld -fpic -march=rv32i -mabi=ilp32
 
@@ -56,6 +54,8 @@ check:
 	@./$(PROG) tests/shift.mem
 	@./$(PROG) tests/slt.mem
 	@./$(PROG) tests/upper.mem
+	@./$(PROG) tests/load.mem
+	@./$(PROG) tests/store.mem
 
 all: sim $(TESTS)
 

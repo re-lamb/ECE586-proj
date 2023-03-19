@@ -40,6 +40,7 @@ int loadop(int addr, int offset, InstNum func)
     }
 
     if (debug) printf("Load: 0x%08X => 0x%08X\n", addr + offset, ret);
+    return ret;
 }
 
 void storeop(int addr, int offset, InstNum func, int value)
