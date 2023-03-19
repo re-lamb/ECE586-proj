@@ -75,3 +75,4 @@ int aluop(int a, int b, InstNum func)
     if (debug) printf("ALU: %s %d, %d => %d\n", instnames[func], a, b, f);
     return f;
 }
+

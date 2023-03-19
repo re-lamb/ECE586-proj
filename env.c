@@ -2,7 +2,7 @@
  * ECE586 Winter 2023 Final Project
  * R.E. Lamb
  *
- * env functions
+ * env (syscall) functions
  */
 
 #include "rvdefs.h"
@@ -13,8 +13,8 @@
 
 int envop(Instruction inst)
 {
-    int call = regread(17); /* fetch syscall number */
-    int fd = regread(10);   /* file destricptor */
+    int call = regread(17);	/* fetch syscall number */
+    int fd = regread(10);	/* file destricptor */
     int buffaddr = regread(11); /* address of buffer */
     int len = regread(12);
 
@@ -81,3 +81,4 @@ int envop(Instruction inst)
 
     return -1;
 }
+

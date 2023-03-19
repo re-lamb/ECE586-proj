@@ -103,10 +103,17 @@ Instruction decode(uint value)
     this.rs2 = (value & 0x1f00000) >> 20;
     this.imm = 0;
 
+    /* Check for a trap/nop and exit */
+    if (value == 0)
+    {
+        this.func = exitprog;
+	return this;
+    }
+
     switch (this.opcode)
     {
         case aluRtype:
-            // R format
+            /* R format */
             switch (funct3)
             {
                 case 0:
@@ -147,7 +154,7 @@ Instruction decode(uint value)
 
 
         case aluItype:
-            // I format (ALU ops)
+            /* I format (ALU ops) */
             this.imm = (value & 0xfff00000) >> 20;
             if (value & SIGNBIT) this.imm |= 0xfffff000;
             
@@ -163,7 +170,7 @@ Instruction decode(uint value)
 
                 case 2:
                     this.func = slti;
-                    // todo: bits 11:5 must be 0?
+                    /* todo: bits 11:5 must be 0? */
                     break;
 
                 case 3:
@@ -191,7 +198,7 @@ Instruction decode(uint value)
             break;
 
         case load:
-            // I format (loads)
+            /* I format (loads) */
             this.imm = (value & 0xfff00000) >> 20;
             if (value & SIGNBIT) this.imm |= 0xfffff000;  /* sign extended */
 
@@ -220,7 +227,7 @@ Instruction decode(uint value)
             break;
 
         case jumpItype:
-            // I format (jalr)
+            /* I format (jalr) */
             this.imm = (value & 0xfff00000) >> 20;
             if (value & SIGNBIT) this.imm |= 0xfffff000;
             
@@ -234,7 +241,7 @@ Instruction decode(uint value)
             break;
 
         case envcall:
-            // I format (ecall/ebreak)
+            /* I format (ecall/ebreak) */
             this.imm = (value & 0xfff00000) >> 20;
             if (value & SIGNBIT) this.imm |= 0xfffff000;  /* sign extended */
 
@@ -244,10 +251,10 @@ Instruction decode(uint value)
             break;
 
         case store:
-            // S format (stores)
-            tmp = (value & 0xfe000000) >> 20;   // bits 31:25
+            /* S format (stores) */
+            tmp = (value & 0xfe000000) >> 20;   	/* bits 31:25 */
             if (value & SIGNBIT) tmp |= 0xfffff000;
-            this.imm = tmp | this.rd;           // bits 11:7
+            this.imm = tmp | this.rd;           	/* bits 11:7 */
 
             switch (funct3)
             {
@@ -266,7 +273,7 @@ Instruction decode(uint value)
             break;
 
         case branch:
-            // B format (branches)
+            /* B format (branches) */
             tmp = (value & SIGNBIT) ? 0xfffff000 : 0;
             this.imm = tmp | ((value & 0x80) << 4 |
                               (value & 0x7e000000) >> 20 |
@@ -301,7 +308,7 @@ Instruction decode(uint value)
             break;
 
         case jumpJtype:
-            // J format (jump and link)
+            /* J format (jump and link) */
             tmp = (value & SIGNBIT) ? 0xfff00000 : 0;
             this.imm = tmp | ((value & 0x7fe00000) >> 20 |
                               (value & 0x00100000) >> 9 |
@@ -311,7 +318,7 @@ Instruction decode(uint value)
 
         case loadUPC:
         case loadUpper:
-            // U format
+            /* U format */
             this.imm = (value & 0xfffff000);
             this.func = (this.opcode == loadUpper) ? lui : auipc;
             break;
@@ -369,6 +376,7 @@ uint execute(uint pc, Instruction inst)
         case jumpItype:
             regwrite(inst.rd, nextpc);
             nextpc = rs1 + inst.imm;
+	    nextpc &= 0xfffffffe;
             break;
         
         case loadUpper:
@@ -380,15 +388,15 @@ uint execute(uint pc, Instruction inst)
             break;
 
         case envcall:
-		if (inst.func == ebreak)
-		{
-			interactive = 1;
-			printf("EBREAK @ 0x%08X\n", pc);
-		}
-		else
-		{
-			regwrite(10, envop(inst)); /* result left in a0 */
-		}
+            if (inst.func == ebreak)
+            {
+		interactive = 1;
+		printf("EBREAK @ 0x%08X\n", pc);
+    	    }
+	    else
+	    {
+		regwrite(10, envop(inst)); /* result left in a0 */
+	    }
             break;
 
         default:
@@ -449,7 +457,7 @@ void run(uint startPC, uint initialSP)
 
     while (1)
     {
-        /* Check for misaligned pc */
+        /* Check for misaligned PC */
         if ((pc & 0x3) != 0)
         {
             fprintf(stderr, "Misaligned access @ PC=0x%08X, aborting\n", pc);
@@ -545,6 +553,6 @@ void run(uint startPC, uint initialSP)
         pc = execute(pc, inst);
 
         if (verbose && !debug) dumpregs();
-
     }
 }
+

@@ -22,7 +22,7 @@
 
 uint8_t *mem;
 
-/* args */
+/* Flags */
 int debug = 0;
 int verbose = 0;
 int interactive = 0;
@@ -33,7 +33,7 @@ uint breakAddr = 0;
 char defmem[] = "program.mem";
 char *memfile = NULL;
 
-/* for interactive mode */
+/* For interactive mode */
 struct termios orig_termios;
 
 /*
@@ -73,19 +73,19 @@ uint8_t *loadfile(FILE *fp)
         }
 
         /* Use the store function to copy into main mem */
-        memstore(/*mem, */addr, 4, value);
+        memstore(addr, 4, value);
     }
 
     return mem;
 }
 
-/* restore the original term settings */
+/* Restore the original term settings */
 void setcooked() 
 {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
 }
 
-/* interactive sets raw mode without echo */
+/* Interactive sets raw mode without echo */
 void setraw()
 {
     tcgetattr(STDIN_FILENO, &orig_termios);
@@ -176,10 +176,13 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
+    /* Load it */
     mem = loadfile(file);
     fclose(file);
 
+    /* Run it */
     setraw();
-    run(pc, sp /*, mem */);
+    run(pc, sp);
     setcooked();
 }
+
