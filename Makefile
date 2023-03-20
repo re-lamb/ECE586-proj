@@ -19,47 +19,52 @@ OBJS=main.o sim.o mem.o alu.o env.o
 
 CC=gcc -Wall
 
+#
+# Build the simulator
+#
 sim: $(OBJS) $(INCLUDES)
 	$(CC) -o $(PROG) $(OBJS)
 
+tests: FORCE
+	@cd $(TESTDIR) && $(MAKE) all
+
+#
 # Generate .mem files from a C function
+#
 TESTPROG=prog
-
-# Generate .mem file from an assembler .s file
-TESTDIR=tests
-TESTS=addsub beq bge blt logical shift slt upper load store
-
-ASFLAGS=-ahld -fpic -march=rv32i -mabi=ilp32
 
 testgen: $(TESTPROG).c
 	$(RVGCC) -fpic -march=rv32i -mabi=ilp32 -S $(TESTPROG).c
 	$(RVAS) -ahld $(TESTPROG).s -o $(TESTPROG).o
 	$(RVOBJDUMP) -d $(TESTPROG).o | grep -o '^[[:blank:]]*[[:xdigit:]]*:[[:blank:]][[:xdigit:]]*' > $(TESTPROG).mem
 
+#
+# Generate .mem file from an assembler .s file
+#
+TESTDIR=tests
+TESTS=addsub beq bge blt logical shift slt upper load store jump
+
+# this one is special (requires an input file)
 ecall:
-	$(RVGCC) -fpic -march=rv32i -mabi=ilp32 -S $(TESTDIR)/$(@F).s
-	$(RVAS) $(ASFLAGS) $(TESTDIR)/$(@F).s -o $(TESTDIR)/$(@F).o
-	$(RVOBJDUMP) -d $(TESTDIR)/$(@F).o | grep -o '^[[:blank:]]*[[:xdigit:]]*:[[:blank:]][[:xdigit:]]*' > $(TESTDIR)/$(@F).mem
+	@echo ""
+	@echo -n "Running test '"$(@F)"'..."
+	@./$(PROG) -d $(TESTDIR)/ecall.mem < tests/ecall.input >> test.log || echo "ok"
 
 $(TESTS):
-	$(RVAS) $(ASFLAGS) $(TESTDIR)/$(@F).s -o $(TESTDIR)/$(@F).o
-	$(RVOBJDUMP) -d $(TESTDIR)/$(@F).o | grep -o '^[[:blank:]]*[[:xdigit:]]*:[[:blank:]][[:xdigit:]]*' > $(TESTDIR)/$(@F).mem
+	@echo ""
+	@echo -n "Running test '"$(@F)"'..."
+	@./$(PROG) -d $(TESTDIR)/$(@F).mem >> test.log && echo "ok"
 
-check:
-	@./$(PROG) tests/addsub.mem
-	@./$(PROG) tests/beq.mem
-	@./$(PROG) tests/bge.mem
-	@./$(PROG) tests/blt.mem
-	@./$(PROG) tests/logical.mem
-	@./$(PROG) tests/shift.mem
-	@./$(PROG) tests/slt.mem
-	@./$(PROG) tests/upper.mem
-	@./$(PROG) tests/load.mem
-	@./$(PROG) tests/store.mem
+# build the sim and tests
+all: sim tests
 
-all: sim $(TESTS)
+# run the tests (ecall is special)
+check:  $(TESTS) ecall
 
-# Clean up
+# clean up
 clean:
-	@rm -f $(OBJS) $(PROG)
+	@rm -f $(OBJS) $(PROG) $(TESTPROG) test.log
+	@cd $(TESTDIR) && $(MAKE) clean
+
+FORCE:
 

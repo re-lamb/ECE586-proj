@@ -3,7 +3,8 @@
     addi t1, zero, 1
     addi t2, zero, 3
     auipc a0, 0         # am i storing the correct pc?
-    jal a1, 4
+    jal a1, L0
+L0:
     addi a0, a0, 8
     bne a0, a1, fail
     beq a0, a1, L2      # if predicted pc matched
@@ -16,22 +17,25 @@ L2:
     jal L1
     bne t1, t2, fail
  
-    li, a3, 2060        # test largest possible negative imm
-    jal a2, 4
-    add a2, a2, a3   
-    jalr, ra, a2, -2048    
+    li a3, 2060         # test largest possible negative imm
+    jal a2, L3
+L3:
+    add a2, a2, a3
+    jalr ra, a2, -2048
     j fail
     
-    li, a3, -2035       # test largest possible positive imm
-    jal a2, 4           # also using a half align immediate!
-    add a2, a2, a3   
-    jalr, ra, a2, 2047    
+    li a3, -2035        # test largest possible positive imm
+    jal a2, L4          # also using a half align immediate!
+L4:
+    add a2, a2, a3
+    jalr ra, a2, 2047
     j fail
     
-    li, a3, -2034       # test that LSB is discarded after 
-    jal a2, 4           # addition
-    add a2, a2, a3   
-    jalr, ra, a2, 2047    
+    li a3, -2034        # test that LSB is discarded after 
+    jal a2, L5          # addition
+L5:
+    add a2, a2, a3
+    jalr ra, a2, 2047
     j fail
     
 pass:
