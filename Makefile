@@ -31,7 +31,7 @@ tests: FORCE
 #
 # Generate .mem files from a C function
 #
-TESTPROG=prog
+TESTPROG=program
 
 testgen: $(TESTPROG).c
 	$(RVGCC) -fpic -march=rv32i -mabi=ilp32 -S $(TESTPROG).c

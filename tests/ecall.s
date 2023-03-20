@@ -6,7 +6,8 @@
 .equ SYS_WRITE, 64
 .equ SYS_EXIT, 94
 
-.equ RDLEN, 20
+.equ RDLEN, 42
+.equ WRLEN, 21
 
 .equ RDBUF, 0x1000
 .equ MSGBUF, 0x2000
@@ -25,7 +26,7 @@
 # write what we just read
     li a0, STDOUT
     li a1, MSGBUF
-    lbu a2, len
+    li a2, WRLEN
     li a7, SYS_WRITE
     ecall
     
@@ -49,8 +50,7 @@ fail:
 .align 2
 
 # output for the write test
-msg: .asciz "This is a test "
-len: .byte .-msg
+msg: .asciz "This is a write test."
 
 # space for the read test
 .org 0x3000
